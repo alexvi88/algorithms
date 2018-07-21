@@ -1,0 +1,115 @@
+#include <iostream>
+#include<queue>
+#include <vector>
+
+# define INF 0x3f3f3f3f
+
+struct verticle
+{
+	int num_of_verticle;
+	int dist;
+
+	verticle(int n1, int n2)
+	{
+		num_of_verticle = n1;
+		dist = n2;
+	}
+
+	
+	friend bool operator < (const verticle& l, const verticle& r)
+	{
+		return l.dist > r.dist;
+	}
+	
+};
+
+
+class Resolver
+{
+	int N;
+	int start;
+
+	std::vector<std::vector< std::pair<int, int> >> arr;
+	std::vector <int> dist;
+	std::priority_queue < verticle > dist_queue;
+
+public:
+
+	Resolver(int _N)
+	{
+		N = _N;
+		arr.resize(N, std::vector< std::pair<int, int> >());
+		dist.resize(N, INF);
+	}
+
+
+	void AddEdge(int v, int u, int w)
+	{
+		arr[u].push_back(std::make_pair(v, w));
+	}
+
+
+	void AssignStart(int _start)
+	{
+		start = _start;
+		dist[start] = 0;
+	}
+	
+  
+	void Dijkstra()
+	{
+		dist_queue.push(verticle(start, dist[start]));
+
+		while (!dist_queue.empty())  		
+		{
+			int u = dist_queue.top().num_of_verticle;
+			dist_queue.pop();
+
+			if (dist[u] == INF)
+			{
+				break;
+			}
+			
+			for (int i = 0; i < arr[u].size(); i++)
+			{
+
+				int cur_vert = arr[u][i].first;
+				int cur_weight = arr[u][i].second;
+
+				if (dist[cur_vert] > dist[u] + cur_weight)
+				{
+					dist[cur_vert] = dist[u] + cur_weight;
+					dist_queue.push(verticle(cur_vert, dist[cur_vert]));
+				}
+
+			}
+		}
+	}
+  
+};
+
+
+int main()
+{
+	int N;
+	std::cin >> N;
+
+	int M;
+	std::cin >> M;
+
+	Resolver myresolver(N);
+
+	for (int i = 0; i < M; i++)
+	{
+		int from;
+		int to;
+		int weight;
+		std::cin >> from >> to >> weight;
+		myresolver.AddEdge(from, to, weight);
+	}
+
+	int start;
+	std::cin >> start;
+
+	myresolver.AssignStart(start);
+}
