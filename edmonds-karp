@@ -1,0 +1,144 @@
+#include<iostream>
+#include<vector>
+#include<algorithm>
+#include <fstream>
+#include<queue>
+#define MAXVALUE 2147483
+
+
+
+class Resolver
+{
+	std::vector<std::vector<int>> Graph;
+	std::vector<std::vector<int>> F;
+	int N;
+
+public:
+	Resolver(int _N)
+	{
+		N = _N;
+		Graph.resize(N, std::vector<int>(N, 0));
+		F.resize(N, std::vector<int>(N, 0));
+
+	}
+
+	void AddEdge(int v1, int v2, int w)
+	{
+		Graph[v1][v2] = w;
+	}
+
+
+	int FindShortestPath()
+	{
+		std::queue<int> bfs_queue;
+		bfs_queue.push(0);
+		std::vector<int> pred(N, MAXVALUE);
+		pred[0] = 0;
+
+		while (!bfs_queue.empty())
+		{
+			int cur_vert = bfs_queue.front();
+			bfs_queue.pop();
+			if (cur_vert == N - 1)
+			{
+				break;
+			}
+
+			std::vector<int> cur_vect = GetNeibFromF(cur_vert);
+			for (int j = 0; j < cur_vect.size(); j++)
+			{
+				int cur_neib = cur_vect[j];
+				if (pred[cur_neib] == MAXVALUE)
+				{
+					pred[cur_neib] = cur_vert;
+					bfs_queue.push(cur_neib);
+				}
+
+			}
+
+		}
+
+		if (pred[N - 1] == MAXVALUE)
+		{
+			return 0;
+		}
+
+		int ans = MAXVALUE;
+		int cur_v = N - 1;
+		while (cur_v != 0)
+		{
+			int cur_pred = pred[cur_v];
+			if (F[cur_pred][cur_v] < ans)
+			{
+				ans = F[cur_pred][cur_v];
+			}
+			cur_v = cur_pred;
+		}
+
+		cur_v = N - 1;
+		while (cur_v != 0)
+		{
+			int cur_pred = pred[cur_v];
+
+			F[cur_v][cur_pred] += ans;
+			F[cur_pred][cur_v] = std::max(0, F[cur_pred][cur_v] - ans);
+
+			cur_v = cur_pred;
+		}
+		return ans;
+	}
+
+
+	int MaxFlow()
+	{
+		F = Graph;
+		int ans = 0;
+		int flow_plus;
+
+		do
+		{
+			flow_plus = FindShortestPath();
+			ans += flow_plus;
+		} while (flow_plus > 0);
+
+		return ans;
+	}
+
+	std::vector<int> GetNeibFromF(int v)
+	{
+		std::vector<int> vect;
+		for (int i = 0; i < N; i++)
+		{
+			if (F[v][i] != 0)
+			{
+				vect.push_back(i);
+			}
+		}
+		return vect;
+	}
+
+};
+
+
+
+int main()
+{
+
+	int N;
+	int M;
+	std::cin >> N >> M;
+
+	Resolver resolver(N);
+
+	for (int i = 0; i < M; i++)
+	{
+		int v1;
+		int v2;
+		int w;
+		std::cin >> v1 >> v2 >> w;
+		resolver.AddEdge(v1 - 1, v2 - 1, w);
+	}
+
+
+	std::cout << resolver.MaxFlow();
+}
