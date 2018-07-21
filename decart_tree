@@ -1,0 +1,109 @@
+#include<iostream>
+#include<vector>
+
+struct Node
+{
+	int key;
+	int prior;
+	Node* left;
+	Node* right;
+
+	Node(int _key, int _prior) : key(_key), prior(_prior), left(nullptr), right(nullptr)
+	{
+
+	}
+
+};
+
+
+class Decart_Tree
+{
+private:
+
+	Node* root;
+
+	void DeleteNodeWithChildren(Node* curnode)
+	{
+
+		if (curnode->left != nullptr)
+		{
+			DeleteNodeWithChildren(curnode->left);
+		}
+
+		if (curnode->right != nullptr)
+		{
+			DeleteNodeWithChildren(curnode->right);
+		}
+
+		delete curnode;
+	}
+
+public:
+
+	Decart_Tree()
+	{
+		root = nullptr;
+	}
+
+
+	~Decart_Tree()
+	{
+		DeleteNodeWithChildren(root);
+	}
+  
+
+	void Split(Node* curnode, Node*& leftnode, Node*& rightnode, int key)
+	{
+
+		if (curnode == nullptr)
+		{
+			leftnode = nullptr;
+			rightnode = nullptr;
+			return;
+		}
+
+		if (curnode->key > key)
+		{
+			Split(curnode->left, leftnode, curnode->left, key);
+			rightnode = curnode;
+			return;
+		}
+
+
+		Split(curnode->right, curnode->right, rightnode, key);
+		leftnode = curnode;
+		return;
+	}
+
+
+	void InsertNode(int key, int prior)
+	{
+		Node* new_node = new Node(key, prior);
+		Insertion(root, new_node);
+	}
+
+
+	void Insertion(Node*& cur_node, Node* new_node)
+	{
+
+		if (cur_node == nullptr)
+		{
+			cur_node = new_node;
+			return;
+		}
+
+		if (new_node->prior > cur_node->prior)
+		{
+			Split(cur_node, new_node->left, new_node->right, new_node->key);
+			cur_node = new_node;
+			return;
+		}
+
+		if (new_node->key < cur_node->key)
+		{
+			Insertion(cur_node->left, new_node);
+			return;
+		}
+
+		Insertion(cur_node->right, new_node);
+	}
