@@ -1,0 +1,316 @@
+#include <iostream>
+#include <vector>
+#include<string>
+#include<queue>
+#include<unordered_set>
+#include <algorithm>
+#include<deque>
+
+
+enum move { U, D, L, R, NO };
+
+std::string VectIntoStr(std::vector<int> alignment_arr)
+{
+	std::string ans = "";
+	for (int i = 0; i < alignment_arr.size(); i++)
+	{
+		ans += (char)(alignment_arr[i] + 97);
+	}
+
+	return ans;
+}
+
+
+struct alignment
+{
+	std::vector<int> alignment_arr;
+	int dist;
+	move prev;
+	alignment* prev_alignment;
+	int pos_of_0;
+	int euristic;
+	std::string align_str;
+
+	alignment()
+	{
+		dist = 0;
+		prev = NO;
+		prev_alignment = NULL;
+		pos_of_0 = -1;
+	}
+
+	alignment(std::vector<int> _alignment_arr, int _dist, move _prev, alignment* _prev_alignment)
+	{
+		alignment_arr = _alignment_arr;
+		dist = _dist;
+		prev = _prev;
+		prev_alignment = _prev_alignment;
+
+		for (int i = 0; i < alignment_arr.size(); i++)
+		{
+			if (alignment_arr[i] == 0)
+			{
+				pos_of_0 = i;
+				break;
+			}
+		}
+
+		euristic = calculate_euristic();
+		align_str = VectIntoStr(alignment_arr);
+	}
+
+	int calculate_euristic()
+	{
+		int eur = 0;
+
+		for (int i = 0; i < 16; i++)
+		{
+			if (alignment_arr[i] != 0)
+			{
+				int curx = (alignment_arr[i] - 1) / 4;
+				int cury = (alignment_arr[i] - 1) % 4;
+
+				eur += 1.1 * (std::abs(i / 4 - curx) + std::abs(i % 4 - cury));
+			}
+		}
+
+
+
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				for (int p = j + 1; p < 4; p++) {
+					int jnum = 4 * i + j;
+					int pnum = 4 * i + p;
+					int jg = alignment_arr[jnum] - 1;
+					int kg = alignment_arr[pnum] - 1;
+					if (jnum != pos_of_0 && pnum != pos_of_0
+						&& jg / 4 == i && kg / 4 == i && jg > kg)
+					{
+						eur += 2;
+					}
+				}
+
+
+		if (alignment_arr[1] == 2 && alignment_arr[4] == 5 && alignment_arr[0] != 1)
+		{
+			eur += 2;
+		}
+
+		if (alignment_arr[2] == 3 && alignment_arr[7] == 8 && alignment_arr[3] != 4)
+		{
+			eur += 2;
+		}
+
+		if (alignment_arr[8] == 9 && alignment_arr[13] == 14 && alignment_arr[12] != 13)
+		{
+			eur += 2;
+		}
+
+		if (alignment_arr[11] == 12 && alignment_arr[14] == 15 && alignment_arr[3] != 0)
+		{
+			eur += 2;
+		}
+
+
+
+		return eur;
+	}
+
+};
+
+
+
+class comparator
+{
+public:
+
+	bool operator()(alignment *l, alignment *r)
+	{
+		return (l->euristic > r->euristic);
+	}
+};
+
+
+
+class Resolver
+{
+	alignment* start;
+	std::string finish_str;
+	std::unordered_set<std::string> set_of_alignments;
+	std::priority_queue<alignment*, std::deque<alignment*>, comparator> queue_bfs;
+
+
+public:
+	Resolver(std::vector<int> start_arr)
+	{
+		start = new alignment(start_arr, 0, NO, NULL);
+
+
+		std::vector<int> finish_vect;
+
+		for (int i = 0; i < 16; i++)
+		{
+			finish_vect.push_back((i + 1) % 16);
+		}
+
+		finish_str = VectIntoStr(finish_vect);
+	}
+
+	void GetAnswer()
+	{
+
+		set_of_alignments.insert(start->align_str);
+
+		//BFS
+
+		queue_bfs.push(start);
+
+		alignment* cur_alignment = new alignment();
+
+		while (!queue_bfs.empty())
+		{
+			cur_alignment = queue_bfs.top();
+			queue_bfs.pop();
+
+			if (cur_alignment->align_str == finish_str)
+			{
+				break;
+			}
+
+			InsertNeighbours(cur_alignment);
+		}
+
+
+		std::cout << cur_alignment->dist << '\n';
+
+		std::string ans = "";
+		alignment* current_prev = cur_alignment;
+
+		while (current_prev != NULL)
+		{
+			ans += move_to_str(current_prev->prev);
+			current_prev = current_prev->prev_alignment;
+		}
+
+		std::reverse(ans.begin(), ans.end());
+
+		std::cout << ans;
+
+
+	}
+
+
+	void InsertNeighbours(alignment* cur_alignment)
+	{
+		std::vector<std::string> answer;
+
+		int index_of_0 = cur_alignment->pos_of_0;
+		int cur_dist = cur_alignment->dist;
+
+		std::vector<int> new_arr;
+		std::string new_str;
+
+		//right
+		if (index_of_0 % 4 <= 2)
+		{
+			new_arr = cur_alignment->alignment_arr;
+			std::swap(new_arr[index_of_0], new_arr[index_of_0 + 1]);
+			new_str = VectIntoStr(new_arr);
+
+			if (set_of_alignments.find(new_str) == set_of_alignments.end())
+			{
+				set_of_alignments.insert(new_str);
+				queue_bfs.push(new alignment(new_arr, cur_dist + 1, L, cur_alignment));
+			}
+		}
+
+		//left
+		if (index_of_0 % 4 >= 1)
+		{
+			new_arr = cur_alignment->alignment_arr;
+			std::swap(new_arr[index_of_0], new_arr[index_of_0 - 1]);
+
+			new_str = VectIntoStr(new_arr);
+
+			if (set_of_alignments.find(new_str) == set_of_alignments.end())
+			{
+				set_of_alignments.insert(new_str);
+				queue_bfs.push(new alignment(new_arr, cur_dist + 1, R, cur_alignment));
+			}
+		}
+
+		//down
+		if (index_of_0 <= 11)
+		{
+			new_arr = cur_alignment->alignment_arr;
+			std::swap(new_arr[index_of_0], new_arr[index_of_0 + 4]);
+
+			new_str = VectIntoStr(new_arr);
+
+			if (set_of_alignments.find(new_str) == set_of_alignments.end())
+			{
+				set_of_alignments.insert(new_str);
+				queue_bfs.push(new alignment(new_arr, cur_dist + 1, U, cur_alignment));
+			}
+		}
+
+		//up
+		if (index_of_0 >= 4)
+		{
+			new_arr = cur_alignment->alignment_arr;
+			std::swap(new_arr[index_of_0], new_arr[index_of_0 - 4]);
+
+			new_str = VectIntoStr(new_arr);
+
+			if (set_of_alignments.find(new_str) == set_of_alignments.end())
+			{
+				set_of_alignments.insert(new_str);
+				queue_bfs.push(new alignment(new_arr, cur_dist + 1, D, cur_alignment));
+			}
+		}
+
+	}
+
+
+	std::string move_to_str(move cur_move)
+	{
+		std::string ans;
+		switch (cur_move)
+		{
+
+		case(L):
+			ans = "L";
+			break;
+
+		case(R):
+			ans = "R";
+			break;
+
+		case(U):
+			ans = "U";
+			break;
+
+		case(D):
+			ans = "D";
+			break;
+		}
+
+		return ans;
+	}
+
+};
+
+int main()
+{
+	std::vector<int> start;
+
+	for (int i = 0; i < 16; i++)
+	{
+		int cur_ch;
+		std::cin >> cur_ch;
+		start.push_back(cur_ch);
+	}
+
+	Resolver resolver(start);
+	resolver.GetAnswer();
+}
