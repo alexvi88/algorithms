@@ -1,0 +1,227 @@
+#include<iostream>
+#include<vector>
+#include<algorithm>
+
+#define MAXINT 214748
+
+struct edge
+{
+	int v1;
+	int v2;
+	int w;
+	bool added_to_mst;
+
+	edge(int _v1, int _v2, int _w)
+	{
+		v1 = _v1;
+		v2 = _v2;
+		w = _w;
+		added_to_mst = false;
+	}
+};
+
+
+
+struct component
+{
+public:
+	std::vector<int> vertexes_of_comp;
+	int min_w;
+	int min_edge_num;
+	component(int first_vert)
+	{
+		vertexes_of_comp.push_back(first_vert);
+		min_w = MAXINT;
+		min_edge_num = -1;
+	}
+
+	component(std::vector<int> _vertexes)
+	{
+		vertexes_of_comp.clear();
+		vertexes_of_comp = _vertexes;
+		min_w = MAXINT;
+		min_edge_num = -1;
+	}
+
+	component()
+	{
+		min_w = MAXINT;
+		min_edge_num = -1;
+	}
+};
+
+class Resolver
+{
+	std::vector<edge> E;
+	int N;
+	std::vector<component> vect_of_components;
+	std::vector<int> MST;
+	std::vector<int> comp_of_vert;
+
+public:
+	Resolver(int _N)
+	{
+		N = _N;
+		comp_of_vert.resize(N);
+		for (int i = 0; i < N; i++)
+		{
+			component cur_comp = component(i);
+			vect_of_components.push_back(component(i));
+			comp_of_vert[i] = i;
+		}
+	}
+
+	void AddEdge(int v1, int v2, int w)
+	{
+		E.push_back(edge(v1, v2, w));
+		E.push_back(edge(v2, v1, w));
+	}
+
+
+	int Boruvka()
+	{
+		while (true)
+		{
+			RefreshComponents();
+
+
+			int n_comp = vect_of_components.size();
+			if (n_comp == 1)
+			{
+				break;
+			}
+
+			for (int i = 0; i < E.size(); i++)
+			{
+				int v1 = E[i].v1;
+				int v2 = E[i].v2;
+				int w = E[i].w;
+				int v1_comp = comp_of_vert[v1];
+				int v2_comp = comp_of_vert[v2];
+
+				if (v1_comp != v2_comp)
+				{
+					if (vect_of_components[v1_comp].min_w > w)
+					{
+						vect_of_components[v1_comp].min_w = w;
+						vect_of_components[v1_comp].min_edge_num = i;
+					}
+
+					if (vect_of_components[v2_comp].min_w > w)
+					{
+						vect_of_components[v2_comp].min_w = w;
+						vect_of_components[v2_comp].min_edge_num = i;
+					}
+				}
+			}
+
+
+			for (int i = 0; i < vect_of_components.size(); i++)
+			{
+
+				int cur_min_edge_num = vect_of_components[i].min_edge_num;
+
+	
+				if (!E[cur_min_edge_num].added_to_mst)
+				{
+					E[cur_min_edge_num].added_to_mst = true;
+					MST.push_back(cur_min_edge_num);
+				}
+			}
+		}
+
+
+		int answer = 0;
+		for (int i = 0; i < MST.size(); i++)
+		{
+			answer += E[MST[i]].w;
+		}
+
+		return answer;
+	}
+
+
+	void RefreshComponents()
+	{
+		if (MST.size() == 0)
+		{
+			return;
+		}
+
+		std::vector<bool> checked(N, false);
+
+		std::vector<std::vector<int>> MST_graph(N);
+
+		for (int i = 0; i < MST.size(); i++)
+		{
+			int v1 = E[MST[i]].v1;
+			int v2 = E[MST[i]].v2;
+			MST_graph[v1].push_back(v2);
+			MST_graph[v2].push_back(v1);
+		}
+
+		vect_of_components.clear();
+		std::vector<int> cur_comp_arr;
+
+		for (int i = 0; i < N; i++)
+		{
+			if (!checked[i])
+			{
+				cur_comp_arr.clear();
+				DFS(i, MST_graph, checked, cur_comp_arr);
+				vect_of_components.push_back(component(cur_comp_arr));
+			}
+		}
+
+		RefreshInfoAboutVertexes();
+	}
+
+
+	void DFS(int v, std::vector<std::vector<int>>& MST_graph, std::vector<bool>& checked, std::vector<int>& cur_comp_arr)
+	{
+		checked[v] = true;
+		cur_comp_arr.push_back(v);
+		for (int i = 0; i < MST_graph[v].size(); i++)
+		{
+			if (!checked[MST_graph[v][i]])
+			{
+				DFS(MST_graph[v][i], MST_graph, checked, cur_comp_arr);
+			}
+		}
+	}
+
+
+	void RefreshInfoAboutVertexes()
+	{
+		for (int i = 0; i < vect_of_components.size(); i++)
+		{
+			for (int j = 0; j < vect_of_components[i].vertexes_of_comp.size(); j++)
+			{
+				int cur_vert = vect_of_components[i].vertexes_of_comp[j];
+				comp_of_vert[cur_vert] = i;
+			}
+		}
+	}
+
+};
+
+
+int main()
+{
+	int N;
+	int M;
+	std::cin >> N >> M;
+
+	Resolver resolver(N);
+
+	for (int i = 0; i < M; i++)
+	{
+		int v1;
+		int v2;
+		int w;
+		std::cin >> v1 >> v2 >> w;
+		resolver.AddEdge(v1 - 1, v2 - 1, w);
+	}
+
+	std::cout << resolver.Boruvka() << '\n';
+}
