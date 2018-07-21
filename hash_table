@@ -1,0 +1,157 @@
+//needed for storing strings
+
+#include<string>
+#include<iostream>
+#include<vector>
+
+struct Element
+{
+	std::string str;
+	bool IsDeleted;
+
+	Element()
+	{
+		str = "";
+		IsDeleted = false;
+	}
+};
+
+class HashTable
+{
+	int realsize;
+	int M;
+	int a;
+	std::vector<Element> arr;
+
+
+public:
+	HashTable()
+	{
+		M = 8;
+		realsize = 0;
+		arr.resize(M);
+		a = 6569;
+	}
+
+
+	void ReHash()
+	{
+		std::vector<Element> temp_arr(M);
+
+		for (int i = 0; i < M; i++)
+		{
+			temp_arr[i].IsDeleted = false;
+			temp_arr[i].str = arr[i].str;
+
+			arr[i].IsDeleted = false;
+			arr[i].str = "";
+		}
+
+		int last_M = M;
+		M = 2 * M;
+		arr.resize(M);
+		realsize = 0;
+
+		for (int i = 0; i < last_M; i++)
+		{
+			if (temp_arr[i].str != "")
+			{
+				AddString(temp_arr[i].str);
+			}
+		}
+
+	}
+
+
+	int Hash(std::string str)
+	{
+		unsigned long long hash = 0;
+
+		for (int i = 0; i < str.length(); i++)
+		{
+			hash = (hash * a + str[i]) % M;
+		}
+
+		return (int)hash;
+	}
+
+
+	bool AddString(std::string newstr)
+	{
+
+		if (FindString(newstr) == true)
+		{
+			return false;
+		}
+
+		int cur_h = Hash(newstr);
+
+		for (int i = 0; i < M; i++)
+		{
+			if (arr[(cur_h + i*i) % M].str == "" && arr[(cur_h + i*i) % M].IsDeleted == false)
+			{
+				arr[(cur_h + i*i) % M].str = newstr;
+				realsize++;
+
+				if (4 * realsize >= 3 * M)
+				{
+					ReHash();
+				}
+
+				return true;
+			}
+		}
+
+		return true;
+	}
+
+	bool DeleteString(std::string str_to_delete)
+	{
+		if (FindString(str_to_delete) == false)
+		{
+			return false;
+		}
+
+		int cur_h = Hash(str_to_delete);
+
+		for (int i = 0; i < M; i++)
+		{
+			if (arr[(cur_h + i*i) % M].str == str_to_delete)
+			{
+				arr[(cur_h + i*i) % M].str = "";
+				arr[(cur_h + i*i) % M].IsDeleted = true;
+				return true;
+			}
+
+			else if (arr[(cur_h + i*i) % M].str == "" && arr[(cur_h + i*i) % M].IsDeleted == false)
+			{
+				return false;
+			}
+		}
+
+
+		return true;
+	}
+
+	bool FindString(std::string str_to_find)
+	{
+
+		int cur_h = Hash(str_to_find);
+
+		for (int i = 0; i < M; i++)
+		{
+			if (arr[(cur_h + i*i) % M].str == str_to_find)
+			{
+				return true;
+			}
+
+			else if (arr[(cur_h + i*i) % M].str == "" && arr[(cur_h + i*i) % M].IsDeleted == false)
+			{
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+};
