@@ -1,1 +1,1 @@
-Algorithms written while studing
+Some of algorithms written while studing
